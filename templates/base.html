@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}VerifyEd{% endblock %} – AI Document Verification</title>
+    <meta name="description" content="VerifyEd – AI-powered student document verification for study abroad applications.">
+
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',
+                            400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',
+                            800:'#3730a3',900:'#312e81',950:'#1e1b4b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="font-sans bg-slate-950 text-slate-100 min-h-screen antialiased">
+
+    <!-- Navbar -->
+    {% if current_user.is_authenticated %}
+    <nav class="fixed top-0 left-0 right-0 z-50 nav-glass border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="{{ url_for('dashboard') }}" class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <span class="text-lg font-bold bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">VerifyEd</span>
+                </a>
+
+                <div class="flex items-center gap-4">
+                    {% if current_user.role == 'student' %}
+                    <a href="{{ url_for('dashboard') }}" class="nav-link text-sm"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard</a>
+                    <a href="{{ url_for('upload') }}" class="nav-link text-sm"><i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload</a>
+                    {% else %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link text-sm"><i data-lucide="shield" class="w-4 h-4"></i> Admin</a>
+                    {% endif %}
+
+                    <div class="flex items-center gap-3 pl-4 border-l border-white/10">
+                        {% if current_user.role == 'student' %}
+                        <a href="{{ url_for('profile') }}" class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-400 to-emerald-400 flex items-center justify-center text-xs font-bold text-white hover:ring-2 hover:ring-brand-400 transition-all" title="My Profile">
+                            {{ current_user.username[0]|upper }}
+                        </a>
+                        {% else %}
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-400 to-emerald-400 flex items-center justify-center text-xs font-bold text-white">
+                            {{ current_user.username[0]|upper }}
+                        </div>
+                        {% endif %}
+                        <span class="text-sm text-slate-300 hidden sm:block">{{ current_user.username }}</span>
+                        {% if current_user.role == 'student' %}
+                        <a href="{{ url_for('dashboard') }}" class="relative text-slate-400 hover:text-brand-400 transition-colors" title="Notifications" id="nav-notif-btn">
+                            <i data-lucide="bell" class="w-4 h-4"></i>
+                            <span id="nav-notif-badge"
+                                  class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white
+                                         text-[9px] font-bold flex items-center justify-center hidden">0</span>
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('logout') }}" class="text-slate-400 hover:text-red-400 transition-colors" title="Logout">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="fixed top-20 right-4 z-[60] flex flex-col gap-2 max-w-sm" id="flash-container">
+        {% for category, message in messages %}
+        <div class="flash-msg flash-{{ category }} flex items-start gap-3 p-4 rounded-xl shadow-2xl border animate-slide-in"
+             onclick="this.remove()">
+            {% if category == 'success' %}
+            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+            {% elif category == 'error' %}
+            <i data-lucide="alert-circle" class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"></i>
+            {% elif category == 'warning' %}
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5"></i>
+            {% else %}
+            <i data-lucide="info" class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5"></i>
+            {% endif %}
+            <p class="text-sm text-slate-200">{{ message }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="{% if current_user.is_authenticated %}pt-20{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>lucide.createIcons();</script>
+    {% if current_user.is_authenticated and current_user.role == 'student' %}
+    <script>
+    (function pollNotifications(){
+        function update(){
+            fetch('/api/notifications')
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                var badge = document.getElementById('nav-notif-badge');
+                if(!badge) return;
+                var count = data.length;
+                if(count > 0){
+                    badge.textContent = count > 9 ? '9+' : count;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }).catch(function(){});
+        }
+        update();
+        setInterval(update, 30000);
+    })();
+    </script>
+    {% endif %}
+    {% block scripts %}{% endblock %}
+</body>
+</html>

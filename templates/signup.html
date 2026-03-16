@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center px-4 relative">
+    <div class="absolute inset-0 bg-gradient-to-br from-slate-950 via-brand-950/50 to-slate-950"></div>
+    <div class="absolute top-1/4 right-1/4 w-72 h-72 bg-brand-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-1/4 left-1/4 w-56 h-56 bg-emerald-500/8 rounded-full blur-3xl"></div>
+
+    <div class="relative z-10 w-full max-w-md">
+        <div class="text-center mb-8">
+            <a href="{{ url_for('landing') }}" class="inline-flex items-center gap-2">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center">
+                    <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+                </div>
+                <span class="text-2xl font-bold bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">VerifyEd</span>
+            </a>
+        </div>
+
+        <div class="glass-card rounded-2xl p-8 border border-white/5">
+            <h2 class="text-2xl font-bold text-white text-center mb-2">Create your account</h2>
+            <p class="text-slate-400 text-center mb-8 text-sm">Start verifying your documents today</p>
+
+            <form method="POST" action="{{ url_for('signup') }}" class="space-y-5" id="signup-form">
+                <div>
+                    <label for="full_name" class="block text-sm font-medium text-slate-300 mb-1.5">Full Name</label>
+                    <div class="relative">
+                        <i data-lucide="user-circle" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                        <input type="text" id="full_name" name="full_name" required
+                               class="input-field pl-10" placeholder="John Doe"
+                               value="{{ prefill.get('full_name', '') }}">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="username" class="block text-sm font-medium text-slate-300 mb-1.5">Username</label>
+                    <div class="relative">
+                        <i data-lucide="at-sign" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                        <input type="text" id="username" name="username" required autocomplete="username" minlength="3"
+                               class="input-field pl-10" placeholder="johndoe"
+                               value="{{ prefill.get('username', '') }}">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+                    <div class="relative">
+                        <i data-lucide="mail" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                        <input type="email" id="email" name="email" required autocomplete="email"
+                               class="input-field pl-10" placeholder="john@example.com"
+                               value="{{ prefill.get('email', '') }}">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                        <input type="password" id="password" name="password" required minlength="6" autocomplete="new-password"
+                               class="input-field pl-10" placeholder="At least 6 characters" oninput="checkPwStrength(this.value)">
+                    </div>
+                    <!-- Strength bar -->
+                    <div class="mt-2 space-y-1" id="pw-strength-wrap" style="display:none">
+                        <div class="flex gap-1">
+                            <div id="ps1" class="h-1 flex-1 rounded-full bg-slate-700 transition-colors"></div>
+                            <div id="ps2" class="h-1 flex-1 rounded-full bg-slate-700 transition-colors"></div>
+                            <div id="ps3" class="h-1 flex-1 rounded-full bg-slate-700 transition-colors"></div>
+                            <div id="ps4" class="h-1 flex-1 rounded-full bg-slate-700 transition-colors"></div>
+                        </div>
+                        <p id="pw-strength-label" class="text-xs text-slate-500"></p>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="confirm_password" class="block text-sm font-medium text-slate-300 mb-1.5">Confirm Password</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                        <input type="password" id="confirm_password" name="confirm_password" required minlength="6" autocomplete="new-password"
+                               class="input-field pl-10" placeholder="Repeat your password">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary w-full py-3 text-base">
+                    <i data-lucide="mail" class="w-4 h-4"></i>
+                    Continue – Send Verification Code
+                </button>
+
+                <p class="text-center text-xs text-slate-500 mt-3">
+                    <i data-lucide="shield" class="w-3 h-3 inline-block mr-1"></i>
+                    A 6-digit OTP will be sent to your email to complete registration.
+                </p>
+                </button>
+            </form>
+
+            <p class="text-center text-sm text-slate-400 mt-6">
+                Already have an account?
+                <a href="{{ url_for('login') }}" class="text-brand-400 hover:text-brand-300 font-medium transition-colors">Sign in</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function checkPwStrength(pw) {
+    var wrap  = document.getElementById('pw-strength-wrap');
+    var label = document.getElementById('pw-strength-label');
+    var bars  = [document.getElementById('ps1'),document.getElementById('ps2'),
+                 document.getElementById('ps3'),document.getElementById('ps4')];
+    if (!pw) { wrap.style.display='none'; return; }
+    wrap.style.display='block';
+
+    var score = 0;
+    if (pw.length >= 8)                   score++;
+    if (/[A-Z]/.test(pw))                 score++;
+    if (/[0-9]/.test(pw))                 score++;
+    if (/[^A-Za-z0-9]/.test(pw))          score++;
+
+    var levels = [
+        { color:'bg-red-500',    text:'Weak',      textColor:'text-red-400' },
+        { color:'bg-orange-500', text:'Fair',       textColor:'text-orange-400' },
+        { color:'bg-yellow-500', text:'Good',       textColor:'text-yellow-400' },
+        { color:'bg-emerald-500',text:'Strong',     textColor:'text-emerald-400' },
+    ];
+    var lvl = levels[score - 1] || levels[0];
+    bars.forEach(function(b, i) {
+        b.className = 'h-1 flex-1 rounded-full transition-colors ' + (i < score ? lvl.color : 'bg-slate-700');
+    });
+    label.textContent = lvl.text;
+    label.className   = 'text-xs ' + lvl.textColor;
+}
+</script>
+{% endblock %}

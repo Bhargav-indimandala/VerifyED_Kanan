@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-white">Welcome, {{ current_user.full_name or current_user.username }}!</h1>
+            <p class="text-slate-400 mt-1">Track your application progress and verify documents</p>
+        </div>
+        <a href="{{ url_for('upload') }}" class="btn-primary">
+            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+            Upload Document
+        </a>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="glass-card rounded-2xl p-6 mb-8 border border-white/5">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold text-white">Application Completion</h2>
+            <span class="text-2xl font-bold bg-gradient-to-r from-brand-400 to-emerald-400 bg-clip-text text-transparent">{{ progress }}%</span>
+        </div>
+        <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full rounded-full bg-gradient-to-r from-brand-500 via-violet-500 to-emerald-500 transition-all duration-1000 ease-out progress-bar" style="width: {{ progress }}%"></div>
+        </div>
+        <p class="text-sm text-slate-400 mt-2">{{ uploaded }} of {{ total }} required documents uploaded</p>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Document Checklist -->
+        <div class="lg:col-span-2 space-y-4">
+            <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                <i data-lucide="clipboard-check" class="w-5 h-5 text-brand-400"></i>
+                Document Checklist
+            </h2>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+                {% for key, label in required_docs.items() %}
+                {% set doc = doc_map.get(key) %}
+                <div class="glass-card rounded-xl p-5 border border-white/5 hover-lift transition-all duration-300 group">
+                    <div class="flex items-start gap-4">
+                        <!-- Status Icon -->
+                        <div class="flex-shrink-0">
+                            {% if doc %}
+                                {% if doc.status == 'verified' %}
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                                    <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+                                </div>
+                                {% elif doc.status == 'needs_review' %}
+                                <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
+                                    <i data-lucide="clock" class="w-5 h-5 text-amber-400"></i>
+                                </div>
+                                {% elif doc.status == 'invalid' or doc.status == 'rejected' %}
+                                <div class="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center">
+                                    <i data-lucide="x-circle" class="w-5 h-5 text-red-400"></i>
+                                </div>
+                                {% elif doc.status == 'processing' %}
+                                <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center animate-pulse">
+                                    <i data-lucide="loader-2" class="w-5 h-5 text-blue-400"></i>
+                                </div>
+                                {% else %}
+                                <div class="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center">
+                                    <i data-lucide="alert-triangle" class="w-5 h-5 text-orange-400"></i>
+                                </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="w-10 h-10 rounded-xl bg-slate-700/50 flex items-center justify-center">
+                                    <i data-lucide="file-plus" class="w-5 h-5 text-slate-500"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Info -->
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-medium text-white text-sm">{{ label }}</h3>
+                            {% if doc %}
+                            <p class="text-xs text-slate-400 mt-1 truncate">{{ doc.original_filename }}</p>
+                            <div class="flex items-center gap-2 mt-2">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                                    {% if doc.status == 'verified' %}bg-emerald-500/15 text-emerald-400
+                                    {% elif doc.status == 'needs_review' %}bg-amber-500/15 text-amber-400
+                                    {% elif doc.status == 'invalid' or doc.status == 'rejected' %}bg-red-500/15 text-red-400
+                                    {% elif doc.status == 'processing' %}bg-blue-500/15 text-blue-400
+                                    {% else %}bg-orange-500/15 text-orange-400{% endif %}">
+                                    {{ doc.status_label }}
+                                </span>
+                                <a href="{{ url_for('view_document', doc_id=doc.id) }}" class="text-xs text-brand-400 hover:text-brand-300">View</a>
+                            </div>
+                            {% else %}
+                            <p class="text-xs text-slate-500 mt-1">Not uploaded yet</p>
+                            <a href="{{ url_for('upload') }}?type={{ key }}" class="inline-flex items-center gap-1 text-xs text-brand-400 hover:text-brand-300 mt-2">
+                                <i data-lucide="upload" class="w-3 h-3"></i> Upload now
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Notifications -->
+            <div class="glass-card rounded-2xl border border-white/5 overflow-hidden">
+                <div class="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+                    <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                        <i data-lucide="bell" class="w-4 h-4 text-brand-400"></i>
+                        Notifications
+                    </h2>
+                    {% if notifications %}
+                    <button onclick="markAllRead()" class="text-xs text-slate-400 hover:text-brand-400 transition-colors">
+                        Mark all read
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="divide-y divide-white/5 max-h-80 overflow-y-auto">
+                    {% if notifications %}
+                    {% for n in notifications %}
+                    <div class="px-5 py-3 flex items-start gap-3 notification-item" data-id="{{ n.id }}">
+                        {% if n.type == 'success' %}
+                        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+                        {% elif n.type == 'error' %}
+                        <i data-lucide="alert-circle" class="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5"></i>
+                        {% elif n.type == 'warning' %}
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5"></i>
+                        {% else %}
+                        <i data-lucide="info" class="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5"></i>
+                        {% endif %}
+                        <p class="text-xs text-slate-300 leading-relaxed">{{ n.message }}</p>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="px-5 py-8 text-center">
+                        <i data-lucide="bell-off" class="w-8 h-8 text-slate-600 mx-auto mb-2"></i>
+                        <p class="text-xs text-slate-500">No new notifications</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="glass-card rounded-2xl p-5 border border-white/5 space-y-4">
+                <h2 class="text-base font-semibold text-white">Quick Stats</h2>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-slate-400">Documents Uploaded</span>
+                        <span class="font-semibold text-white">{{ documents|length }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-slate-400">Verified</span>
+                        <span class="font-semibold text-emerald-400">{{ current_user.verified_count }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-slate-400">Completion</span>
+                        <span class="font-semibold text-brand-400">{{ progress }}%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Timeline -->
+            <div class="glass-card rounded-2xl border border-white/5 overflow-hidden">
+                <div class="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+                    <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                        <i data-lucide="activity" class="w-4 h-4 text-brand-400"></i>
+                        Activity
+                    </h2>
+                </div>
+                <div id="timeline-list" class="divide-y divide-white/5 max-h-64 overflow-y-auto">
+                    <div class="px-5 py-4 text-center">
+                        <div class="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+fetch('/api/timeline')
+  .then(r => r.json())
+  .then(events => {
+    const list = document.getElementById('timeline-list');
+    if (!events.length) {
+      list.innerHTML = '<div class="px-5 py-6 text-center text-xs text-slate-500">No activity yet.</div>';
+      return;
+    }
+    const icons = { upload:'upload-cloud', auto_verify:'shield-check', admin_verified:'check-circle',
+                    admin_rejected:'x-circle', admin_reverify:'refresh-cw', bulk_verified:'check-circle' };
+    const colors = { verified:'text-emerald-400', rejected:'text-red-400', needs_review:'text-amber-400',
+                     invalid:'text-red-400', upload:'text-brand-400', missing_info:'text-orange-400' };
+    list.innerHTML = events.map(e => {
+      const icon  = icons[e.status] || 'clock';
+      const color = colors[e.status] || colors[e.type] || 'text-slate-400';
+      return `<div class="px-4 py-3 flex items-start gap-3">
+        <div class="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <i data-lucide="${icon}" class="w-3.5 h-3.5 ${color}"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-medium text-slate-300 truncate">${e.doc}</p>
+          <p class="text-xs text-slate-500 mt-0.5">${e.message}</p>
+        </div>
+        <span class="text-xs text-slate-600 whitespace-nowrap">${e.time.slice(11)}</span>
+      </div>`;
+    }).join('');
+    if (window.lucide) lucide.createIcons();
+  });
+</script>
+{% endblock %}
+{% endblock %}
