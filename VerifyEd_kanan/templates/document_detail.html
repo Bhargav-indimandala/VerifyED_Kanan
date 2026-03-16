@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% block title %}{{ required_docs.get(doc.doc_type, doc.doc_type) }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <a href="{{ url_for('admin_user_detail', user_id=doc.user_id) if current_user.role == 'admin' else url_for('dashboard') }}"
+       class="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-brand-400 transition-colors mb-6">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        {{ 'Back to Student' if current_user.role == 'admin' else 'Back to Dashboard' }}
+    </a>
+
+    <!-- Document Header -->
+    <div class="glass-card rounded-2xl p-6 border border-white/5 mb-6">
+        <div class="flex items-start gap-5">
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center
+                {% if doc.status == 'verified' %}bg-emerald-500/15
+                {% elif doc.status == 'needs_review' %}bg-amber-500/15
+                {% elif doc.status == 'invalid' or doc.status == 'rejected' %}bg-red-500/15
+                {% else %}bg-blue-500/15{% endif %}">
+                {% if doc.status == 'verified' %}
+                <i data-lucide="check-circle-2" class="w-7 h-7 text-emerald-400"></i>
+                {% elif doc.status == 'needs_review' %}
+                <i data-lucide="clock" class="w-7 h-7 text-amber-400"></i>
+                {% elif doc.status == 'invalid' or doc.status == 'rejected' %}
+                <i data-lucide="x-circle" class="w-7 h-7 text-red-400"></i>
+                {% else %}
+                <i data-lucide="loader-2" class="w-7 h-7 text-blue-400"></i>
+                {% endif %}
+            </div>
+            <div class="flex-1">
+                <h1 class="text-2xl font-bold text-white">{{ required_docs.get(doc.doc_type, doc.doc_type) }}</h1>
+                <p class="text-slate-400 text-sm mt-1">{{ doc.original_filename }} · {{ (doc.file_size / 1024)|round(1) }} KB</p>
+                <div class="flex items-center gap-3 mt-3">
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold
+                        {% if doc.status == 'verified' %}bg-emerald-500/15 text-emerald-400
+                        {% elif doc.status == 'needs_review' %}bg-amber-500/15 text-amber-400
+                        {% elif doc.status == 'invalid' or doc.status == 'rejected' %}bg-red-500/15 text-red-400
+                        {% else %}bg-blue-500/15 text-blue-400{% endif %}">
+                        {{ doc.status_label }}
+                    </span>
+                    <span class="text-xs text-slate-500">Uploaded {{ doc.upload_time.strftime('%B %d, %Y at %H:%M') }}</span>
+                    {% if doc.authenticity_score %}
+                    <span class="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full
+                        {% if doc.authenticity_score >= 80 %}bg-emerald-500/15 text-emerald-400
+                        {% elif doc.authenticity_score >= 50 %}bg-amber-500/15 text-amber-400
+                        {% else %}bg-red-500/15 text-red-400{% endif %}">
+                        <i data-lucide="shield" class="w-3 h-3"></i>
+                        Auth: {{ doc.authenticity_score }}/100
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% if current_user.id == doc.user_id %}
+            <form method="POST" action="{{ url_for('delete_document', doc_id=doc.id) }}" onsubmit="return confirm('Delete this document?')">
+                <button class="p-2 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-colors" title="Delete">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+        <!-- AI Summary -->
+        <div class="glass-card rounded-xl p-5 border border-white/5">
+            <h2 class="text-base font-semibold text-white flex items-center gap-2 mb-3">
+                <i data-lucide="brain" class="w-4 h-4 text-brand-400"></i>
+                AI Analysis Summary
+            </h2>
+            <p class="text-sm text-slate-300 leading-relaxed">{{ doc.ai_summary or 'No analysis available.' }}</p>
+        </div>
+
+        <!-- Extracted Data -->
+        <div class="glass-card rounded-xl p-5 border border-white/5">
+            <h2 class="text-base font-semibold text-white flex items-center gap-2 mb-3">
+                <i data-lucide="database" class="w-4 h-4 text-brand-400"></i>
+                Extracted Data
+            </h2>
+            {% if extracted %}
+            <dl class="space-y-2">
+                {% for key, value in extracted.items() %}
+                <div class="flex items-start gap-2">
+                    <dt class="text-xs text-slate-500 min-w-[100px]">{{ key.replace('_', ' ').title() }}</dt>
+                    <dd class="text-sm text-slate-300">
+                        {% if value is iterable and value is not string %}
+                            {{ value | join(', ') }}
+                        {% else %}
+                            {{ value }}
+                        {% endif %}
+                    </dd>
+                </div>
+                {% endfor %}
+            </dl>
+            {% else %}
+            <p class="text-sm text-slate-500">No structured data extracted.</p>
+            {% endif %}
+        </div>
+
+        <!-- Verification Notes -->
+        <div class="glass-card rounded-xl p-5 border border-white/5">
+            <h2 class="text-base font-semibold text-white flex items-center gap-2 mb-3">
+                <i data-lucide="shield-check" class="w-4 h-4 text-brand-400"></i>
+                Verification Notes
+            </h2>
+            <p class="text-sm text-slate-300 leading-relaxed">{{ doc.verification_notes or 'All checks passed.' }}</p>
+            {% if doc.admin_notes %}
+            <div class="mt-3 p-3 rounded-lg bg-brand-500/5 border border-brand-500/10">
+                <p class="text-xs text-slate-400 mb-1">Admin Notes:</p>
+                <p class="text-sm text-slate-300">{{ doc.admin_notes }}</p>
+            </div>
+            {% endif %}
+            {% set flags = doc.tamper_flags | default('[]') %}
+            {% if flags and flags != '[]' %}
+            <div class="mt-3 p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+                <p class="text-xs text-red-400 font-medium mb-1 flex items-center gap-1">
+                    <i data-lucide="alert-triangle" class="w-3 h-3"></i> Tamper Flags Detected
+                </p>
+                <div id="tamper-flags-display" data-flags="{{ flags | e }}"></div>
+                <script>
+                (function(){
+                    var el=document.getElementById('tamper-flags-display');
+                    try{ var f=JSON.parse(el.dataset.flags);
+                        el.innerHTML=f.map(function(s){ return '<span class="inline-block text-xs text-red-300 bg-red-500/10 rounded px-2 py-0.5 mr-1 mt-1">⚑ '+s+'</span>'; }).join('');
+                    }catch(e){}
+                })();
+                </script>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Verification Checks -->
+        <div class="glass-card rounded-xl p-5 border border-white/5">
+            <h2 class="text-base font-semibold text-white flex items-center gap-2 mb-4">
+                <i data-lucide="list-checks" class="w-4 h-4 text-brand-400"></i>
+                Verification Checks
+            </h2>
+            {% set auto_log = namespace(found=none) %}
+            {% for log in logs %}
+                {% if log.action == 'auto_verify' or log.action == 'admin_reverify' %}
+                    {% if auto_log.found is none %}{% set auto_log.found = log %}{% endif %}
+                {% endif %}
+            {% endfor %}
+            {% if auto_log.found %}
+                {% set raw = auto_log.found.details %}
+                {# Parse JSON check array stored in log.details #}
+                {% set checks = raw | tojson | safe %}
+                <div id="checks-container" data-checks="{{ raw | e }}">
+                </div>
+                <script>
+                (function(){
+                    var container = document.getElementById('checks-container');
+                    var checks;
+                    try { checks = JSON.parse(container.dataset.checks); } catch(e){ return; }
+                    var html = '';
+                    checks.forEach(function(c){
+                        var passedClass  = c.passed ? 'bg-emerald-500/15' : 'bg-red-500/15';
+                        var iconName     = c.passed ? 'check' : 'x';
+                        var iconColor    = c.passed ? 'text-emerald-400' : 'text-red-400';
+                        var nameColor    = c.passed ? 'text-slate-300' : 'text-red-300';
+                        var badgeBg      = c.passed ? 'bg-emerald-500/10 text-emerald-400'
+                                         : c.severity === 'critical' ? 'bg-red-500/10 text-red-400'
+                                         : 'bg-amber-500/10 text-amber-400';
+                        var badgeText    = c.passed ? 'PASS' : c.severity.toUpperCase();
+                        var msgHtml      = (!c.passed && c.message)
+                            ? '<p class="text-xs text-slate-500 mt-0.5">'+c.message+'</p>' : '';
+                        html += '<div class="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">'
+                              + '<div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 '+passedClass+'">'
+                              + '<i data-lucide="'+iconName+'" class="w-3.5 h-3.5 '+iconColor+'"></i>'
+                              + '</div>'
+                              + '<div class="flex-1 min-w-0">'
+                              + '<p class="text-sm font-medium '+nameColor+'">'+c.name+'</p>'
+                              + msgHtml
+                              + '</div>'
+                              + '<span class="text-xs font-mono px-2 py-0.5 rounded-full '+badgeBg+'">'+badgeText+'</span>'
+                              + '</div>';
+                    });
+                    container.innerHTML = html;
+                    if (window.lucide) lucide.createIcons();
+                })();
+                </script>
+            {% elif logs %}
+            <!-- Fallback: show raw log history -->
+            <div class="space-y-2">
+                {% for log in logs %}
+                <div class="flex items-start gap-2 text-xs py-1.5 border-b border-white/5 last:border-0">
+                    <span class="text-slate-500 whitespace-nowrap font-mono">{{ log.timestamp.strftime('%b %d %H:%M') }}</span>
+                    <span class="text-slate-400 font-medium">{{ log.action }}</span>
+                    <span class="text-slate-500">by {{ log.performed_by }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-500">No verification checks recorded.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Admin Status Update (if admin) -->
+    {% if current_user.role == 'admin' %}
+    <div class="glass-card rounded-xl p-5 border border-white/5 mt-6">
+        <h2 class="text-base font-semibold text-white flex items-center gap-2 mb-4">
+            <i data-lucide="settings" class="w-4 h-4 text-brand-400"></i>
+            Update Status
+        </h2>
+        <form method="POST" action="{{ url_for('admin_update_status', doc_id=doc.id) }}" class="flex flex-col sm:flex-row gap-3">
+            <select name="status" class="input-field flex-1">
+                <option value="verified" {% if doc.status == 'verified' %}selected{% endif %}>Verified</option>
+                <option value="needs_review" {% if doc.status == 'needs_review' %}selected{% endif %}>Needs Review</option>
+                <option value="invalid" {% if doc.status == 'invalid' %}selected{% endif %}>Invalid Format</option>
+                <option value="missing_info" {% if doc.status == 'missing_info' %}selected{% endif %}>Missing Info</option>
+                <option value="rejected" {% if doc.status == 'rejected' %}selected{% endif %}>Rejected</option>
+            </select>
+            <input type="text" name="admin_notes" placeholder="Add notes…" class="input-field flex-1" value="{{ doc.admin_notes or '' }}">
+            <button type="submit" class="btn-primary whitespace-nowrap">Update</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
