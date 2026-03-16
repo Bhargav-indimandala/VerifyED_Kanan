@@ -1,0 +1,26 @@
+# Credentials — NEVER commit these
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Database (auto-created on first run)
+database/verifyed.db
+
+# Uploaded files
+uploads/
+!uploads/.gitkeep
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
